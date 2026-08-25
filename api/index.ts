@@ -1,4 +1,3 @@
-import { handle } from "hono/vercel";
-import app from "../server/app";
+import handler from "../serverless/handler.js";
 
-export default handle(app);
+export default handler;

@@ -5,5 +5,5 @@ dist
 .DS_Store
 *.log
 server/
-api/index.ts
+api/entry.ts
 db/migrations/meta

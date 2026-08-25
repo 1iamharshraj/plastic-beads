@@ -12,7 +12,7 @@ node_modules
 # Build outputs
 dist/
 build/
-api/index.js
+serverless/handler.js
 # Test coverage
 coverage/
 .nyc_output/
