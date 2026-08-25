@@ -10,6 +10,8 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
+app.get("/api/health", (c) => c.json({ ok: true, env: env.isProduction ? "production" : "development" }));
+
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",
@@ -38,6 +40,11 @@ if (!env.isProduction) {
     return c.json({ ok: true, userId: u?.id });
   });
 }
+
+app.onError((err, c) => {
+  console.error("[server error]", err);
+  return c.json({ error: "Internal server error", message: env.isProduction ? undefined : String(err) }, 500);
+});
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
