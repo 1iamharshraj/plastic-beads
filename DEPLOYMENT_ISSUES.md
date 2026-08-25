@@ -132,3 +132,24 @@ The `functions` map in `vercel.json` must point to a source file that exists in 
 - `DEPLOYMENT_ISSUES.md`
 
 ---
+
+## Issue 5: Vercel build failed because source needed by build script was ignored
+
+**Error:**
+```
+✘ [ERROR] Could not resolve "server/boot.ts"
+```
+
+**Root cause:**
+`.vercelignore` was ignoring `server/` to keep the upload small, but `npm run build` still tries to bundle `server/boot.ts` into `dist/boot.js` (used for the standalone local server). Because the source files were not uploaded, esbuild could not resolve the entry point and the whole build failed.
+
+**Fix:**
+- Remove `server/` from `.vercelignore` so the backend source is available during the build step.
+- The bundled Vercel function still uses `serverless/handler.js` at runtime, so uploading `server/` does not affect the deployed function — it just allows the build script to complete.
+- Alternatively, split the build into separate scripts and use a custom `buildCommand` in `vercel.json` that skips the standalone server build.
+
+**Files changed:**
+- `.vercelignore`
+- `DEPLOYMENT_ISSUES.md`
+
+---
