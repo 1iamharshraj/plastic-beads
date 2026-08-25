@@ -56,3 +56,47 @@ The `pg` (node-postgres) driver does not always work reliably inside Vercel Serv
 - `src/pages/Login.tsx` (better error formatting)
 
 ---
+
+## Issue 3: Vercel runtime `ERR_MODULE_NOT_FOUND` for `server/app`
+
+**Error:**
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/server/app' imported from /var/task/api/index.js
+```
+
+**Symptom:**
+Every `/api/trpc/*` request returns a 500. The function starts but cannot resolve `../server/app` because the `server/` directory is not deployed with the Vercel function.
+
+**Root cause:**
+`api/index.ts` used `await import("../server/app")`. esbuild treats dynamic `import()` as an external module by default, so it is not bundled into `api/index.js`. At runtime Vercel only has `api/index.js` (and the files listed in `.vercelignore` exclusions), not the `server/` source, so the relative import fails.
+
+**Fix:**
+1. Change `api/index.ts` to a static import so esbuild bundles the entire backend into the function:
+   ```ts
+   import { handle } from "hono/vercel";
+   import app from "../server/app";
+   export default handle(app);
+   ```
+2. Build `api/index.js` locally as part of the build script:
+   ```json
+   "build": "vite build && esbuild server/boot.ts ... --outdir=dist && esbuild api/index.ts --platform=node --bundle --format=esm --outfile=api/index.js ..."
+   ```
+3. Point Vercel at the compiled JS file:
+   - `vercel.json` `functions`: `"api/index.js"`
+   - `vercel.json` `rewrites` `destination`: `"/api/index.js"`
+4. Ignore the source/backend from Vercel upload so only `api/index.js` is the function:
+   - `.vercelignore`: add `server/`, `api/index.ts`, `db/migrations/meta`
+5. Ignore the build artifact from Git:
+   - `.gitignore`: add `api/index.js`
+   - `eslint.config.js` `globalIgnores`: add `api/index.js`
+
+**Files changed:**
+- `api/index.ts`
+- `package.json`
+- `vercel.json`
+- `.vercelignore`
+- `.gitignore`
+- `eslint.config.js`
+- `DEPLOYMENT_ISSUES.md`
+
+---
