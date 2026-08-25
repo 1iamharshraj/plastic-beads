@@ -187,19 +187,40 @@ Requests to `/api/trpc/*` time out (504) or return empty responses because Verce
 `hono/vercel` returns a Web-standard `fetch` handler (`(request) => Response`), but Vercel deploys functions using the Node.js runtime by default. The Node.js runtime expects a handler with the signature `(req, res) => void`, so it ignores the returned `Response` and the request never completes.
 
 **Fix:**
-Set the function runtime to `edge` in `vercel.json` so Vercel uses the Web `fetch` handler signature:
-```json
-{
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 30,
-      "runtime": "edge"
-    }
-  }
-}
+Declare the Edge runtime in the function source file, not in `vercel.json` (the `functions` map does not accept a top-level `runtime: "edge"` value). Add to `api/index.ts`:
+```ts
+export const runtime = "edge";
 ```
 
+This tells Vercel to deploy `api/index.ts` as an Edge Function, which expects the Web `fetch` handler signature.
+
 **Files changed:**
+- `api/index.ts`
+- `vercel.json`
+- `DEPLOYMENT_ISSUES.md`
+
+---
+
+## Issue 8: `runtime: "edge"` is invalid inside `vercel.json` functions map
+
+**Error:**
+```
+Error: Function Runtimes must have a valid version, for example `now-php@1.0.0`.
+```
+
+**Root cause:**
+The `functions` map in `vercel.json` only accepts Node.js runtime versions (e.g. `nodejs18.x`, `nodejs20.x`). It does **not** accept `"edge"`. To deploy an Edge Function, the runtime must be declared in the function source file itself.
+
+**Fix:**
+Move the runtime declaration from `vercel.json` to `api/index.ts`:
+```ts
+export const runtime = "edge";
+```
+
+Keep `vercel.json` `functions` limited to Node.js-compatible options such as `maxDuration`.
+
+**Files changed:**
+- `api/index.ts`
 - `vercel.json`
 - `DEPLOYMENT_ISSUES.md`
 
