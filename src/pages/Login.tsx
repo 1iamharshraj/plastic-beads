@@ -16,19 +16,26 @@ export default function Login() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
+  function formatError(message: string) {
+    if (message.includes("Unexpected token") || message.includes("not valid JSON")) {
+      return "A server error occurred. Please check your connection or try again later.";
+    }
+    return message;
+  }
+
   const login = trpc.auth.login.useMutation({
     onSuccess: async () => {
       await utils.invalidate();
       navigate("/dashboard");
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(formatError(e.message)),
   });
   const register = trpc.auth.register.useMutation({
     onSuccess: async () => {
       await utils.invalidate();
       navigate("/dashboard");
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(formatError(e.message)),
   });
 
   const submit = (e: React.FormEvent) => {

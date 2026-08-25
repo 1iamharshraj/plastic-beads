@@ -1,14 +1,10 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Client } from "pg";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { migrate } from "drizzle-orm/neon-serverless/migrator";
 
 async function run() {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  const db = drizzle(client);
+  const db = drizzle(process.env.DATABASE_URL);
   await migrate(db, { migrationsFolder: "./db/migrations" });
-  await client.end();
   console.log("Migrations applied successfully.");
 }
 

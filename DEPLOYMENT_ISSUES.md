@@ -27,3 +27,32 @@ Vercel only recognizes serverless functions that live inside an `api/` directory
 - Updated `vercel.json`.
 
 ---
+
+## Issue 2: Server returns HTML error page instead of JSON on registration/login
+
+**Symptom:**
+Registration or login on Vercel shows:
+```
+Unexpected token 'A', "A server e"... is not valid JSON
+```
+
+**Root cause:**
+The `pg` (node-postgres) driver does not always work reliably inside Vercel Serverless Functions when connecting to Neon over TCP. When the database connection fails, the function throws before the tRPC handler can return JSON, and Vercel responds with a generic HTML error page. The frontend then fails to parse that HTML as JSON.
+
+**Fix:**
+- Switch the Drizzle driver from `drizzle-orm/node-postgres` + `pg` to `drizzle-orm/neon-serverless` + `@neondatabase/serverless`.
+- Update `server/queries/connection.ts` to pass the connection string directly:
+  ```ts
+  import { drizzle } from "drizzle-orm/neon-serverless";
+  const db = drizzle(env.databaseUrl, { schema: fullSchema });
+  ```
+- Update `scripts/migrate.mjs` to use the same Neon serverless driver.
+- Improve frontend error handling to display a friendly message when the server returns non-JSON (e.g. an HTML error page).
+
+**Files changed:**
+- `server/queries/connection.ts`
+- `scripts/migrate.mjs`
+- `package.json` / `package-lock.json` (added `@neondatabase/serverless`)
+- `src/pages/Login.tsx` (better error formatting)
+
+---
