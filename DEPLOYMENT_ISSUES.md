@@ -170,3 +170,37 @@ The pre-bundle entry file was placed in `api/entry.ts`. It had to be ignored in 
 - `DEPLOYMENT_ISSUES.md`
 
 ---
+
+## Issue 7: Vercel Node.js runtime treated Hono fetch handler as `(req, res)`
+
+**Error / warning:**
+```
+WARN: default export returned a `Response`.
+├▶ The default-export signature is `(req, res) => void` — returns are ignored.
+│  You likely meant the Web `fetch`-style API.
+```
+
+**Symptom:**
+Requests to `/api/trpc/*` time out (504) or return empty responses because Vercel ignores the returned `Response` object.
+
+**Root cause:**
+`hono/vercel` returns a Web-standard `fetch` handler (`(request) => Response`), but Vercel deploys functions using the Node.js runtime by default. The Node.js runtime expects a handler with the signature `(req, res) => void`, so it ignores the returned `Response` and the request never completes.
+
+**Fix:**
+Set the function runtime to `edge` in `vercel.json` so Vercel uses the Web `fetch` handler signature:
+```json
+{
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30,
+      "runtime": "edge"
+    }
+  }
+}
+```
+
+**Files changed:**
+- `vercel.json`
+- `DEPLOYMENT_ISSUES.md`
+
+---
