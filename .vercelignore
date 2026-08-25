@@ -4,3 +4,6 @@ dist
 .env
 .DS_Store
 *.log
+server/
+api/index.ts
+db/migrations/meta
